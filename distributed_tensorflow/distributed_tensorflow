@@ -5,7 +5,7 @@ heat_template_version: 2015-10-15
 resources:
 
   parameter_servers:
-    type: OS::Nova::ResourceGroup
+    type: OS::Heat::ResourceGroup
     properties:
       count: { get_param: parameter_server_count }
       resource_def:
@@ -14,86 +14,97 @@ resources:
           flavor: baremetal
           image: CC-Ubuntu16.04
           key_name: { get_param: key_name }
-
-      flavor: baremetal
-      image: CC-Ubuntu16.04
-      key_name: { get_param: key_name }
-      networks:
-         - network: sharednet1
-      scheduler_hints: { reservation: { get_param: reservation_id } }
-      name:
-        str_replace:
-          template:
-            $name-$index
-          params:
-            $name: { get_param: name_prefix }
-            $index: "%index%"
-      user_data:
-        str_replace
-          template: |
-            #!/bin/bash
-            cat <<EOF > /tmp/tf_cluster_config.json
-            {
-              "ps": $ps_servers,
-              "worker": $worker_servers
-            }
-            EOF
-            sudo apt-get update
-            sudo apt-get install -y python-pip python-dev
-            sudo pip install --upgrade tensorflow
-            cd /home/cc
-            git clone https://github.com/jakecoll/heat_template_examples.git
-            cd heat_template_examples/distributed_tensorflow
-            hostname | xargs python simple_mnist.py --hostname
-          params:
-            ps_servers: { get_attr: [parameter_servers, first_address] }
-            worker_servers: { get_attr: [worker_servers, first_address] }
+          flavor: baremetal
+          image: CC-Ubuntu16.04
+          key_name: { get_param: key_name }
+          networks:
+             - network: sharednet1
+          scheduler_hints: { reservation: { get_param: reservation_id } }
+          name:
+            str_replace:
+              template:
+                $name-ps-$index
+              params:
+                $name: { get_param: name_prefix }
+                $index: "%index%"
+          user_data:
+            str_replace:
+              template: |
+                #!/bin/bash
+                export STACK_ID=$stack_id
+                export OS_PROJECT_ID=$project_id
+                export OS_AUTH_URL=$auth_url
+                export OS_USERNAME=$username
+                export OS_REGION_NAME=$region
+                export OS_USER_DOMAIN_NAME=$user_domain
+                export OS_PASSWORD=$password
+                sudo apt-get update
+                sudo apt-get install -y python-pip python-dev
+                sudo pip install --upgrade tensorflow
+                cd /home/cc
+                git clone https://github.com/jakecoll/heat_template_examples.git
+                cd heat_template_examples/distributed_tensorflow
+                sudo pip install -r requirements.txt
+                hostname | xargs python simple_mnist.py --hostname
+              params:
+                $stack_id: { get_param: "OS::stack_id" }
+                $project_id: { get_param: "OS::project_id" }
+                $auth_url: { get_param: os_auth_url }
+                $username: { get_param: os_username }
+                $region: { get_param: os_region_name }
+                $user_domain: { get_param: os_user_domain_name }
+                $password: { get_param: password }
 
   worker_servers:
-    type: OS::Nova::ResourceGroup
+    type: OS::Heat::ResourceGroup
     properties:
-      count: { get_param: parameter_server_count }
+      count: { get_param: worker_server_count }
       resource_def:
         type: OS::Nova::Server
         properties:
           flavor: baremetal
           image: CC-Ubuntu16.04
           key_name: { get_param: key_name }
-
-      flavor: baremetal
-      image: CC-Ubuntu16.04
-      key_name: { get_param: key_name }
-      networks:
-         - network: sharednet1
-      scheduler_hints: { reservation: { get_param: reservation_id } }
-      name:
-        str_replace:
-          template:
-            $name-$index
-          params:
-            $name: { get_param: name_prefix }
-            $index: "%index%"
-      user_data:
-        str_replace
-          template: |
-            #!/bin/bash
-            cat <<EOF > /tmp/tf_cluster_config.json
-            {
-              "ps": $ps_servers,
-              "worker": $worker_servers
-            }
-            EOF
-            sudo apt-get update
-            sudo apt-get install -y python-pip python-dev
-            sudo pip install --upgrade tensorflow
-            cd /home/cc
-            git clone https://github.com/jakecoll/heat_template_examples.git
-            cd heat_template_examples/distributed_tensorflow
-            hostname | xargs python simple_mnist.py --hostname
-          params:
-            ps_servers: { get_attr: [parameter_servers, first_address] }
-            worker_servers: { get_attr: [worker_servers, first_address] }
-
+          flavor: baremetal
+          image: CC-Ubuntu16.04
+          key_name: { get_param: key_name }
+          networks:
+             - network: sharednet1
+          scheduler_hints: { reservation: { get_param: reservation_id } }
+          name:
+            str_replace:
+              template:
+                $name-worker-$index
+              params:
+                $name: { get_param: name_prefix }
+                $index: "%index%"
+          user_data:
+            str_replace:
+            template: |
+              #!/bin/bash
+              export STACK_ID=$stack_id
+              export OS_PROJECT_ID=$project_id
+              export OS_USERNAME=$username
+              export OS_AUTH_URL=$auth_url
+              export OS_REGION_NAME=$region
+              export OS_USER_DOMAIN_NAME=$user_domain
+              export OS_PASSWORD=$password
+              sudo apt-get update
+              sudo apt-get install -y python-pip python-dev
+              sudo pip install --upgrade tensorflow
+              cd /home/cc
+              git clone https://github.com/jakecoll/heat_template_examples.git
+              cd heat_template_examples/distributed_tensorflow
+              sudo pip install -r requirements.txt
+              hostname | xargs python simple_mnist.py --hostname
+            params:
+              $stack_id: { get_param: "OS::stack_id" }
+              $project_id: { get_param: "OS::project_id" }
+              $auth_url: { get_param: os_auth_url }
+              $region: { get_param: os_region_name }
+              $user_domain: { get_param: os_user_domain_name }
+              $password: { get_param: password }
+              $username: { get_param: os_username }
 
 # The parameters section gathers configuration from the user.
 parameters:
@@ -125,11 +136,15 @@ parameters:
     description: ID of the Blazar reservation to use for launching instances.
     constraints:
     - custom_constraint: blazar.reservation
+  os_password:
+    type: string
+    description: User password.
+    hidden: true
 
 outputs:
-  server_ip:
+  parameter_server_ips:
     description: Public IP address of the NFS server
-    value: { get_attr: [master_server_floating_ip, ip] }
-  client_ips:
+    value: { get_attr: [parameter_servers, first_address] }
+  worker_server_ips:
     description: Private IP addresses of the NFS clients
-    value: { get_attr: [worker, first_address] }
+    value: { get_attr: [worker_servers, first_address] }

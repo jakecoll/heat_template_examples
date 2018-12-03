@@ -1,0 +1,2 @@
+keystoneauth1==3.10.0
+python-heatclient==1.16.1

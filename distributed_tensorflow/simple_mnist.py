@@ -1,6 +1,6 @@
 '''
 Modified from:
-
+  https://github.com/ischlag/distributed-tensorflow-example
 Distributed Tensorflow 1.2.0 example of using data parallelism and share model parameters.
 Trains a simple sigmoid neural network on mnist for 20 epochs on three machines using one parameter server.
 Change the hardcoded host urls below with your own hosts.
@@ -15,13 +15,12 @@ More details here: ischlag.github.io
 from __future__ import print_function
 
 import tensorflow as tf
-import sys
 import re
 import time
 import json
 from tensorflow.examples.tutorials.mnist import input_data
+from stack_output import get_stack_output
 
-TF_CONFIG = '/tmp/tf_config.json'
 PORT = '2222'
 
 with open('/tmp/tf_config.json') as f:
@@ -30,9 +29,12 @@ f.close()
 
 # cluster specification
 parameter_servers = [
-    '{private_ip}:{port}'.format(str(x), PORT) for x in conf['ps']]
+    '{private_ip}:{port}'.format(str(x), PORT) for x
+    in get_stack_output('parameter_server_ips')]
 workers = [
-    '{private_ip}:{port}'.format(str(x), PORT) for x in conf['worker']]
+    '{private_ip}:{port}'.format(str(x), PORT) for x
+    in get_stack_output('worker_server_ips')]
+
 cluster = tf.train.ClusterSpec({"ps": parameter_servers, "worker": workers})
 
 # input flags
