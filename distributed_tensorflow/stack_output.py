@@ -10,7 +10,7 @@ def get_heat_client():
         username=environ['OS_USERNAME'],
         password=environ['OS_PASSWORD'],
         project_id=environ['OS_PROJECT_ID'],
-        OS_USER_DOMAIN_NAME=environ['OS_USER_DOMAIN_NAME'])
+        user_domain_name=environ['OS_USER_DOMAIN_NAME'])
     sess = session.Session(auth=auth)
     adp = adapter.Adapter(
         session=sess, region_name=environ['OS_REGION_NAME'])
