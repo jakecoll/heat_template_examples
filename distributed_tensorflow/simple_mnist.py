@@ -25,10 +25,10 @@ PORT = '2222'
 
 # cluster specification
 parameter_servers = [
-    '{private_ip}:{port}'.format(str(x), PORT) for x
+    '{}:{}'.format(str(x), PORT) for x
     in get_stack_output('parameter_server_ips')]
 workers = [
-    '{private_ip}:{port}'.format(str(x), PORT) for x
+    '{}:{}'.format(str(x), PORT) for x
     in get_stack_output('worker_server_ips')]
 
 cluster = tf.train.ClusterSpec({"ps": parameter_servers, "worker": workers})
