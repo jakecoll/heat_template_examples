@@ -46,8 +46,8 @@ task_index = int(re.findall('\d+', FLAGS.hostname)[-1])
 # start a server for a specific task
 server = tf.train.Server(
     cluster,
-    job_name=FLAGS.job_name,
-    task_index=FLAGS.task_index)
+    job_name=job_name,
+    task_index=task_index)
 
 # config
 batch_size = 100
@@ -64,7 +64,7 @@ elif job_name == "worker":
 
     # Between-graph replication
     with tf.device(tf.train.replica_device_setter(
-            worker_device="/job:worker/task:%d" % FLAGS.task_index,
+            worker_device="/job:worker/task:%d" % task_index,
             cluster=cluster)):
 
         # count the number of updates
@@ -141,7 +141,7 @@ elif job_name == "worker":
         print("Variables initialized ...")
 
     sv = tf.train.Supervisor(
-        is_chief=(FLAGS.task_index == 0),
+        is_chief=(task_index == 0),
         global_step=global_step,
         init_op=init_op)
 
