@@ -23,10 +23,6 @@ from stack_output import get_stack_output
 
 PORT = '2222'
 
-with open('/tmp/tf_config.json') as f:
-    conf = json.load(f)
-f.close()
-
 # cluster specification
 parameter_servers = [
     '{private_ip}:{port}'.format(str(x), PORT) for x

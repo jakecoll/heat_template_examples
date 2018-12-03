@@ -36,7 +36,7 @@ resources:
                 export OS_AUTH_URL=$auth_url
                 export OS_USERNAME=$username
                 export OS_REGION_NAME=$region
-                export OS_USER_DOMAIN_NAME=$user_domain
+                export OS_USER_DOMAIN_NAME="Default"
                 export OS_PASSWORD=$password
                 sudo apt-get update
                 sudo apt-get install -y python-pip python-dev
@@ -52,8 +52,7 @@ resources:
                 $auth_url: { get_param: os_auth_url }
                 $username: { get_param: os_username }
                 $region: { get_param: os_region_name }
-                $user_domain: { get_param: os_user_domain_name }
-                $password: { get_param: password }
+                $password: { get_param: os_password }
 
   worker_servers:
     type: OS::Heat::ResourceGroup
@@ -80,31 +79,30 @@ resources:
                 $index: "%index%"
           user_data:
             str_replace:
-            template: |
-              #!/bin/bash
-              export STACK_ID=$stack_id
-              export OS_PROJECT_ID=$project_id
-              export OS_USERNAME=$username
-              export OS_AUTH_URL=$auth_url
-              export OS_REGION_NAME=$region
-              export OS_USER_DOMAIN_NAME=$user_domain
-              export OS_PASSWORD=$password
-              sudo apt-get update
-              sudo apt-get install -y python-pip python-dev
-              sudo pip install --upgrade tensorflow
-              cd /home/cc
-              git clone https://github.com/jakecoll/heat_template_examples.git
-              cd heat_template_examples/distributed_tensorflow
-              sudo pip install -r requirements.txt
-              hostname | xargs python simple_mnist.py --hostname
-            params:
-              $stack_id: { get_param: "OS::stack_id" }
-              $project_id: { get_param: "OS::project_id" }
-              $auth_url: { get_param: os_auth_url }
-              $region: { get_param: os_region_name }
-              $user_domain: { get_param: os_user_domain_name }
-              $password: { get_param: password }
-              $username: { get_param: os_username }
+              template: |
+                #!/bin/bash
+                export STACK_ID=$stack_id
+                export OS_PROJECT_ID=$project_id
+                export OS_USERNAME=$username
+                export OS_AUTH_URL=$auth_url
+                export OS_REGION_NAME=$region
+                export OS_USER_DOMAIN_NAME="Default"
+                export OS_PASSWORD=$password
+                sudo apt-get update
+                sudo apt-get install -y python-pip python-dev
+                sudo pip install --upgrade tensorflow
+                cd /home/cc
+                git clone https://github.com/jakecoll/heat_template_examples.git
+                cd heat_template_examples/distributed_tensorflow
+                sudo pip install -r requirements.txt
+                hostname | xargs python simple_mnist.py --hostname
+              params:
+                $stack_id: { get_param: "OS::stack_id" }
+                $project_id: { get_param: "OS::project_id" }
+                $auth_url: { get_param: os_auth_url }
+                $region: { get_param: os_region_name }
+                $password: { get_param: os_password }
+                $username: { get_param: os_username }
 
 # The parameters section gathers configuration from the user.
 parameters:
@@ -140,6 +138,15 @@ parameters:
     type: string
     description: User password.
     hidden: true
+  os_auth_url:
+    type: string
+    description: auth url.
+  os_username:
+    type: string
+    description: user.
+  os_region_name:
+    type: string
+    description: region name.
 
 outputs:
   parameter_server_ips:
